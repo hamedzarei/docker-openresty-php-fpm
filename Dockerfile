@@ -2,7 +2,7 @@
 FROM php:7.2.10-fpm-alpine
 
 # Maintainer
-LABEL maintainer="yongze.chen <sapphire.php@gmail.com>"
+LABEL maintainer="Hamed Zarei <hamedzarei.7232@gmail.com>"
 
 # Set Timezone Environments
 ENV TIMEZONE  Asia/Shanghai
@@ -81,9 +81,14 @@ RUN apk add --update tzdata  \
     && curl --location --output /usr/local/bin/phpunit https://phar.phpunit.de/phpunit.phar  \
     && chmod +x /usr/local/bin/phpunit
 
+# install postgres connection for php
+RUN apk update && apk add postgresql-dev \
+    && docker-php-ext-configure pgsql -with-pgsql=/usr/local/pgsql \
+    && docker-php-ext-install pgsql pdo_pgsql
 
 # Docker Build Arguments
 ARG RESTY_VERSION="1.13.6.2"
+ARG RESTY_LUAROCKS_VERSION="2.4.3"
 ARG RESTY_OPENSSL_VERSION="1.0.2k"
 ARG RESTY_PCRE_VERSION="8.42"
 ARG RESTY_J="1"
@@ -163,13 +168,39 @@ RUN apk add --no-cache --virtual .build-deps \
         openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
         openresty-${RESTY_VERSION}.tar.gz openresty-${RESTY_VERSION} \
         pcre-${RESTY_PCRE_VERSION}.tar.gz pcre-${RESTY_PCRE_VERSION} \
+#  install luarock
+    && curl -fSL https://github.com/luarocks/luarocks/archive/${RESTY_LUAROCKS_VERSION}.tar.gz -o luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz \
+           && tar xzf luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz \
+           && cd luarocks-${RESTY_LUAROCKS_VERSION} \
+           && ./configure \
+               --prefix=/usr/local/openresty/luajit \
+               --with-lua=/usr/local/openresty/luajit \
+               --lua-suffix=jit-2.1.0-beta3 \
+               --with-lua-include=/usr/local/openresty/luajit/include/luajit-2.1 \
+           && make build \
+           && make install \
+           && cd /tmp \
+           && rm -rf luarocks-${RESTY_LUAROCKS_VERSION} luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz \
     && apk del .build-deps \
     && ln -sf /dev/stdout /usr/local/openresty/nginx/logs/access.log \
     && ln -sf /dev/stderr /usr/local/openresty/nginx/logs/error.log \
     && rm -rf /usr/local/openresty/nginx/html/*
 
+
 # Add additional binaries into PATH for convenience
 ENV PATH=$PATH:/usr/local/openresty/luajit/bin/:/usr/local/openresty/nginx/sbin/:/usr/local/openresty/bin/
+
+
+# Add lua module for json, hash, jwt, http request
+RUN apk add gcc && apk add musl-dev
+RUN apk add git
+RUN luarocks install luasocket \
+    && luarocks install inspect \
+    && luarocks install httpclient \
+    && luarocks install json-lua \
+    && luarocks install murmurhash3 \
+    && luarocks install lua-resty-jwt
+
 
 # Copy nginx configuration files
 COPY conf/nginx.conf /usr/local/openresty/nginx/conf/nginx.conf

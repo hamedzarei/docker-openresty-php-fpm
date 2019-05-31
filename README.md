@@ -1,45 +1,17 @@
-## 关于 About
-Docker Image packaging for PHP & OpenResty
- 
- 
-#### 基于官方镜像 Based Official Image
+## PHP-fpm Openresty Dockerfile
 
-```bash
-openresty/openresty:alpine
-php:7.2.6-fpm-alpine
-```
+based on: https://github.com/chenyongze/docker-openresty-php-fpm
 
-#### 运行 Run
-```bash
-docker run -it -p 80:80 registry.cn-beijing.aliyuncs.com/icebreaking/docker-openresty-php-fpm bash
-```
+added features:
 
-#### 官网 Docker
+*   php postgres connection module
+*   luarock
+*   lua libraries: json, hash, jwt, http request
 
-```bash
-docker pull registry.cn-beijing.aliyuncs.com/icebreaking/docker-openresty-php-fpm
-```
+#### build via
+docker build -t op .
 
+#### run and test via
+docker run -p 8080:80 op
 
-
-#### 阿里云公网 Alibaba Cloud Internet
-
-```bash
-docker pull registry.cn-beijing.aliyuncs.com/icebreaking/docker-openresty-php-fpm
-```
-
-
-#### 阿里云经典内网 Alibaba Cloud Intranet
-
-```bash
-docker pull registry-vpc.cn-beijing.aliyuncs.com/icebreaking/docker-openresty-php-fpm
-```
-
-
-
-#### 阿里云VPC网络 Alibaba Cloud VPC Network
-
-```bash
-docker pull registry-internal.cn-beijing.aliyuncs.com/icebreaking/docker-openresty-php-fpm
-```
-
+this will show php configurations page
